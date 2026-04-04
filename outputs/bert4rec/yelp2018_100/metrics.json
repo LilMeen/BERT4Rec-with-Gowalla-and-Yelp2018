@@ -1,0 +1,20 @@
+{
+  "best_epoch": 1,
+  "best_valid_metrics": {
+    "Recall@5": 0.5,
+    "Recall@10": 0.5,
+    "Recall@20": 0.5,
+    "NDCG@5": 0.2217132018086354,
+    "NDCG@10": 0.2217132018086354,
+    "NDCG@20": 0.2217132018086354
+  },
+  "test_metrics": {
+    "Recall@5": 0.0,
+    "Recall@10": 0.0,
+    "Recall@20": 0.25,
+    "NDCG@5": 0.0,
+    "NDCG@10": 0.0,
+    "NDCG@20": 0.06566238375929839
+  },
+  "checkpoint": "outputs\\bert4rec\\yelp2018_100\\best_model.pt"
+}

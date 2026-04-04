@@ -1,0 +1,52 @@
+=== BERT4Rec Training Log ===
+output_dir=outputs\bert4rec\yelp2018
+device=cpu
+num_train_sequences=4
+num_valid_sequences=4
+num_test_sequences=4
+
+Epoch 001 | train_loss=104.0339 | valid Recall@10=0.0000
+  -> New best checkpoint saved at epoch 1 (Recall@10=0.0000)
+Epoch 002 | train_loss=35.4800 | valid Recall@10=0.2500
+  -> New best checkpoint saved at epoch 2 (Recall@10=0.2500)
+Epoch 003 | train_loss=38.6890 | valid Recall@10=0.0000
+Epoch 004 | train_loss=26.0387 | valid Recall@10=0.2500
+Epoch 005 | train_loss=32.7841 | valid Recall@10=0.5000
+  -> New best checkpoint saved at epoch 5 (Recall@10=0.5000)
+Epoch 006 | train_loss=15.9220 | valid Recall@10=0.2500
+Epoch 007 | train_loss=29.3397 | valid Recall@10=0.0000
+Epoch 008 | train_loss=22.6598 | valid Recall@10=0.0000
+Epoch 009 | train_loss=32.7995 | valid Recall@10=0.0000
+Epoch 010 | train_loss=15.9907 | valid Recall@10=0.0000
+Epoch 011 | train_loss=22.2711 | valid Recall@10=0.0000
+Epoch 012 | train_loss=18.8676 | valid Recall@10=0.2500
+Epoch 013 | train_loss=15.2511 | valid Recall@10=0.2500
+Epoch 014 | train_loss=14.1892 | valid Recall@10=0.2500
+Epoch 015 | train_loss=20.9248 | valid Recall@10=0.2500
+Epoch 016 | train_loss=15.8174 | valid Recall@10=0.2500
+Epoch 017 | train_loss=15.9890 | valid Recall@10=0.2500
+Epoch 018 | train_loss=13.7272 | valid Recall@10=0.2500
+Epoch 019 | train_loss=14.0169 | valid Recall@10=0.2500
+Epoch 020 | train_loss=12.4661 | valid Recall@10=0.2500
+
+=== Final Results ===
+{
+  "best_epoch": 5,
+  "best_valid_metrics": {
+    "Recall@5": 0.0,
+    "Recall@10": 0.5,
+    "Recall@20": 0.5,
+    "NDCG@5": 0.0,
+    "NDCG@10": 0.14752370549546728,
+    "NDCG@20": 0.14752370549546728
+  },
+  "test_metrics": {
+    "Recall@5": 0.0,
+    "Recall@10": 0.25,
+    "Recall@20": 0.5,
+    "NDCG@5": 0.0,
+    "NDCG@10": 0.08333333333333333,
+    "NDCG@20": 0.1432864499753662
+  },
+  "checkpoint": "outputs\\bert4rec\\yelp2018\\best_model.pt"
+}
