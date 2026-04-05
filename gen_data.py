@@ -7,7 +7,9 @@ import random
 import pickle
 import collections
 
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+
+tf.disable_v2_behavior()
 
 from util import *
 from vocab import *
@@ -66,7 +68,7 @@ def printable_text(text):
     elif six.PY2:
         if isinstance(text, str):
             return text
-        elif isinstance(text, unicode):
+        elif isinstance(text, six.text_type):
             return text.encode("utf-8")
         else:
             raise ValueError("Unsupported string type: %s" % (type(text)))
@@ -86,7 +88,7 @@ def convert_to_unicode(text):
     elif six.PY2:
         if isinstance(text, str):
             return text.decode("utf-8", "ignore")
-        elif isinstance(text, unicode):
+        elif isinstance(text, six.text_type):
             return text
         else:
             raise ValueError("Unsupported string type: %s" % (type(text)))
@@ -476,7 +478,7 @@ def main():
     output_dir = FLAGS.data_dir
     dataset_name = FLAGS.dataset_name
     version_id = FLAGS.signature
-    print version_id
+    print(version_id)
 
     if not os.path.isdir(output_dir):
         print(output_dir + ' is not exist')

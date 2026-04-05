@@ -21,10 +21,11 @@ from __future__ import print_function
 import os
 import modeling
 import optimization
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 import numpy as np
 import sys
 import pickle
+tf.disable_v2_behavior()
 flags = tf.flags
 
 FLAGS = flags.FLAGS
