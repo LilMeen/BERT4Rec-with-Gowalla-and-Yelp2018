@@ -1,60 +1,46 @@
-#!/usr/bin/env bash
-set -euo pipefail
+CKPT_DIR="/path/BERT4Rec"
+dataset_name="yelp2018"
+max_seq_length=50
+max_predictions_per_seq=20
+masked_lm_prob=0.4
 
-VENV_DIR=".venv"
+dim=64
+batch_size=256
+num_train_steps=400000
 
-if [ -n "${PYTHON_BIN:-}" ]; then
-  :
-elif command -v python3 >/dev/null 2>&1; then
-  PYTHON_BIN="python3"
-elif command -v python >/dev/null 2>&1; then
-  PYTHON_BIN="python"
-else
-  echo "Error: python/python3 not found in PATH"
-  exit 1
-fi
+mask_prob=1.0
+prop_sliding_window=0.5
+dupe_factor=10
+pool_size=10
 
-if [ ! -d "$VENV_DIR" ]; then
-  "$PYTHON_BIN" -m venv "$VENV_DIR"
-fi
+signature="-mp${mask_prob}-sw${prop_sliding_window}-mlp${masked_lm_prob}-df${dupe_factor}-mpps${max_predictions_per_seq}-msl${max_seq_length}"
 
-# shellcheck disable=SC1091
-if [ -f "$VENV_DIR/bin/activate" ]; then
-  # shellcheck disable=SC1091
-  source "$VENV_DIR/bin/activate"
-elif [ -f "$VENV_DIR/Scripts/activate" ]; then
-  # shellcheck disable=SC1091
-  source "$VENV_DIR/Scripts/activate"
-else
-  echo "Error: cannot find virtualenv activate script in $VENV_DIR"
-  exit 1
-fi
 
-cleanup() {
-  if command -v deactivate >/dev/null 2>&1; then
-    deactivate
-  fi
-}
-trap cleanup EXIT
+python -u gen_data_fin.py \
+    --dataset_name=${dataset_name} \
+    --max_seq_length=${max_seq_length} \
+    --max_predictions_per_seq=${max_predictions_per_seq} \
+    --mask_prob=${mask_prob} \
+    --dupe_factor=${dupe_factor} \
+    --masked_lm_prob=${masked_lm_prob} \
+    --prop_sliding_window=${prop_sliding_window} \
+    --signature=${signature} \
+    --pool_size=${pool_size} \
 
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
 
-# Only preprocess once unless metadata is removed.
-if [ ! -f "data/processed/yelp2018/metadata.json" ]; then
-  python -m preprocessing.yelp2018 \
-    --input datasets/Yelp-2018/yelp_academic_dataset_review.json \
-    --output-dir data/processed/yelp2018 \
-    --min-user-interactions 5 \
-    --min-item-interactions 5
-fi
-
-python scripts/train_bert4rec_yelp2018.py \
-  --data-dir data/processed/yelp2018 \
-  --output-dir outputs/bert4rec/yelp2018 \
-  --log-file outputs/bert4rec/yelp2018/train_eval_log.txt \
-  --epochs 20 \
-  --batch-size 256 \
-  --eval-batch-size 256 \
-  --max-len 200 \
-  --device cuda
+CUDA_VISIBLE_DEVICES=0 python -u run.py \
+    --train_input_file=./data/${dataset_name}${signature}.train.tfrecord \
+    --test_input_file=./data/${dataset_name}${signature}.test.tfrecord \
+    --vocab_filename=./data/${dataset_name}${signature}.vocab \
+    --user_history_filename=./data/${dataset_name}${signature}.his \
+    --checkpointDir=${CKPT_DIR}/${dataset_name} \
+    --signature=${signature}-${dim} \
+    --do_train=True \
+    --do_eval=True \
+    --bert_config_file=./bert_train/bert_config_${dataset_name}_${dim}.json \
+    --batch_size=${batch_size} \
+    --max_seq_length=${max_seq_length} \
+    --max_predictions_per_seq=${max_predictions_per_seq} \
+    --num_train_steps=${num_train_steps} \
+    --num_warmup_steps=100 \
+    --learning_rate=1e-4

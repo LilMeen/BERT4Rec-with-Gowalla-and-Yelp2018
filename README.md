@@ -1,116 +1,93 @@
-# BERT4Rec on Gowalla
+# BERT4Rec
 
-This workspace includes:
-1. Gowalla preprocessing modules for BERT4Rec input format.
-2. Yelp2018 preprocessing modules for BERT4Rec input format.
-3. BERT4Rec model setup (adapted from FeiSun/BERT4Rec architecture) with train/eval scripts.
-4. Single best-checkpoint saving (always overwrite one checkpoint file).
 
-## Project Structure
+## Usage
 
-- `datasets/Gowalla_totalCheckins.txt`: raw Gowalla file
-- `datasets/Yelp-2018/yelp_academic_dataset_review.json`: raw Yelp2018 review file
-- `preprocessing/gowalla.py`: convert raw Gowalla to train/valid/test sequences
-- `preprocessing/yelp2018.py`: convert Yelp2018 review interactions to train/valid/test sequences
-- `bert4rec/model.py`: BERT4Rec model
-- `bert4rec/data.py`: train/eval datasets and sequence loaders
-- `bert4rec/trainer.py`: training loop, evaluation metrics, checkpoint handling
-- `scripts/train_bert4rec.py`: entrypoint for training and evaluation
-- `scripts/train_bert4rec_yelp2018.py`: Yelp2018-focused train/eval entrypoint
+**Requirements**
 
-## 1) Install Dependencies
+* python 2.7+
+* Tensorflow 1.12 (GPU version)
+* CUDA compatible with TF 1.12
 
-```bash
-pip install -r requirements.txt
+**Run**
+
+For simplicity, here we take ml-1m as an example:
+
+``` bash
+./run_ml-1m.sh
+```
+include two part command:
+generated masked training data
+``` bash
+python -u gen_data_fin.py \
+    --dataset_name=${dataset_name} \
+    --max_seq_length=${max_seq_length} \
+    --max_predictions_per_seq=${max_predictions_per_seq} \
+    --mask_prob=${mask_prob} \
+    --dupe_factor=${dupe_factor} \
+    --masked_lm_prob=${masked_lm_prob} \
+    --prop_sliding_window=${prop_sliding_window} \
+    --signature=${signature} \
+    --pool_size=${pool_size} \
 ```
 
-## 2) Preprocess Gowalla
-
-```bash
-python -m preprocessing.gowalla \
-  --input datasets/Gowalla_totalCheckins.txt \
-  --output-dir data/processed/gowalla \
-  --min-interactions 5
+train the model
+``` bash
+CUDA_VISIBLE_DEVICES=0 python -u run.py \
+    --train_input_file=./data/${dataset_name}${signature}.train.tfrecord \
+    --test_input_file=./data/${dataset_name}${signature}.test.tfrecord \
+    --vocab_filename=./data/${dataset_name}${signature}.vocab \
+    --user_history_filename=./data/${dataset_name}${signature}.his \
+    --checkpointDir=${CKPT_DIR}/${dataset_name} \
+    --signature=${signature}-${dim} \
+    --do_train=True \
+    --do_eval=True \
+    --bert_config_file=./bert_train/bert_config_${dataset_name}_${dim}.json \
+    --batch_size=${batch_size} \
+    --max_seq_length=${max_seq_length} \
+    --max_predictions_per_seq=${max_predictions_per_seq} \
+    --num_train_steps=${num_train_steps} \
+    --num_warmup_steps=100 \
+    --learning_rate=1e-4
 ```
 
-Outputs:
-- `data/processed/gowalla/train.txt`
-- `data/processed/gowalla/valid.txt`
-- `data/processed/gowalla/test.txt`
-- `data/processed/gowalla/metadata.json`
-- mapping files (`user_id_map.json`, `item_id_map.json`)
+### hyper-parameter settings
+json in `bert_train` like `bert_config_ml-1m_64.json`
 
-## 3) Train + Evaluate
-
-```bash
-python scripts/train_bert4rec.py \
-  --data-dir data/processed/gowalla \
-  --output-dir outputs/bert4rec/gowalla \
-  --log-file outputs/bert4rec/gowalla/train_eval_log.txt \
-  --epochs 20 \
-  --batch-size 256 \
-  --eval-batch-size 256 \
-  --max-len 200 \
-  --device cuda
+```json
+{
+  "attention_probs_dropout_prob": 0.2,
+  "hidden_act": "gelu",
+  "hidden_dropout_prob": 0.2,
+  "hidden_size": 64,
+  "initializer_range": 0.02,
+  "intermediate_size": 256,
+  "max_position_embeddings": 200,
+  "num_attention_heads": 2,
+  "num_hidden_layers": 2,
+  "type_vocab_size": 2,
+  "vocab_size": 3420
+}
 ```
 
-If no CUDA is available, the code automatically falls back to CPU.
 
-## Checkpoint Policy
+## Reference
 
-- Best model is selected by `Recall@10` on validation set.
-- Only one checkpoint is kept per run output folder, for example: `outputs/bert4rec/gowalla/best_model.pt`.
-- New best checkpoints overwrite the previous one to save disk space.
-
-## Metrics
-
-After training:
-- Training/evaluation logs are written to `<output-dir>/train_eval_log.txt`.
-- `<output-dir>/metrics.json` is created with:
-  - `best_epoch`
-  - `best_valid_metrics`
-  - `test_metrics`
-  - checkpoint path
-
-## Yelp2018 Workflow
-
-### 1) Preprocess Yelp2018
-
-```bash
-python -m preprocessing.yelp2018 \
-  --input datasets/Yelp-2018/yelp_academic_dataset_review.json \
-  --output-dir data/processed/yelp2018 \
-  --min-user-interactions 5 \
-  --min-item-interactions 5
-```
-
-Optional quick run on partial data:
-
-```bash
-python -m preprocessing.yelp2018 \
-  --input datasets/Yelp-2018/yelp_academic_dataset_review.json \
-  --output-dir data/processed/yelp2018_small \
-  --min-user-interactions 1 \
-  --min-item-interactions 1 \
-  --max-lines 100000
-```
-
-### 2) Train + Evaluate on Yelp2018
-
-```bash
-python scripts/train_bert4rec_yelp2018.py \
-  --data-dir data/processed/yelp2018 \
-  --output-dir outputs/bert4rec/yelp2018 \
-  --log-file outputs/bert4rec/yelp2018/train_eval_log.txt \
-  --epochs 20 \
-  --batch-size 256 \
-  --eval-batch-size 256 \
-  --max-len 200 \
-  --device cuda
-```
-
-### 3) One-command Run Script (Yelp2018)
-
-```bash
-bash run_yelp2018.sh
+```TeX
+@inproceedings{Sun:2019:BSR:3357384.3357895,
+ author = {Sun, Fei and Liu, Jun and Wu, Jian and Pei, Changhua and Lin, Xiao and Ou, Wenwu and Jiang, Peng},
+ title = {BERT4Rec: Sequential Recommendation with Bidirectional Encoder Representations from Transformer},
+ booktitle = {Proceedings of the 28th ACM International Conference on Information and Knowledge Management},
+ series = {CIKM '19},
+ year = {2019},
+ isbn = {978-1-4503-6976-3},
+ location = {Beijing, China},
+ pages = {1441--1450},
+ numpages = {10},
+ url = {http://doi.acm.org/10.1145/3357384.3357895},
+ doi = {10.1145/3357384.3357895},
+ acmid = {3357895},
+ publisher = {ACM},
+ address = {New York, NY, USA}
+} 
 ```
