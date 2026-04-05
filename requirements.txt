@@ -1,3 +1,4 @@
-tensorflow-gpu==1.15.5
-numpy==1.19.5
+tensorflow==2.15.1
+numpy==1.26.4
 six>=1.10.0,<2.0
+tensorflow-estimator==2.15.0

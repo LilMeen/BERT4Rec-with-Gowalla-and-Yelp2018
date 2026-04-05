@@ -26,9 +26,22 @@ import numpy as np
 import sys
 import pickle
 tf.disable_v2_behavior()
+
+try:
+    estimator_api = tf.estimator
+except AttributeError:
+    try:
+        from tensorflow_estimator.python.estimator import estimator_lib as estimator_api
+    except Exception:
+        estimator_api = None
 flags = tf.flags
 
 FLAGS = flags.FLAGS
+
+if estimator_api is None:
+    raise ImportError(
+        "Estimator API is unavailable. Install tensorflow-estimator or use a TensorFlow build that includes estimator."
+    )
 
 ## Required parameters
 flags.DEFINE_string(
@@ -250,7 +263,7 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
         masked_lm_ids = features["masked_lm_ids"]
         masked_lm_weights = features["masked_lm_weights"]
 
-        is_training = (mode == tf.estimator.ModeKeys.TRAIN)
+        is_training = (mode == estimator_api.ModeKeys.TRAIN)
 
         model = modeling.BertModel(
             config=bert_config,
@@ -301,17 +314,17 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
                             init_string)
 
         output_spec = None
-        if mode == tf.estimator.ModeKeys.TRAIN:
+        if mode == estimator_api.ModeKeys.TRAIN:
             train_op = optimization.create_optimizer(total_loss, learning_rate,
                                                      num_train_steps,
                                                      num_warmup_steps, use_tpu)
 
-            output_spec = tf.estimator.EstimatorSpec(
+            output_spec = estimator_api.EstimatorSpec(
                 mode=mode,
                 loss=total_loss,
                 train_op=train_op,
                 scaffold=scaffold_fn)
-        elif mode == tf.estimator.ModeKeys.EVAL:
+        elif mode == estimator_api.ModeKeys.EVAL:
 
             def metric_fn(masked_lm_example_loss, masked_lm_log_probs,
                           masked_lm_ids, masked_lm_weights):
@@ -344,7 +357,7 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
             eval_metrics = metric_fn(masked_lm_example_loss,
                                      masked_lm_log_probs, masked_lm_ids,
                                      masked_lm_weights)
-            output_spec = tf.estimator.EstimatorSpec(
+            output_spec = estimator_api.EstimatorSpec(
                 mode=mode,
                 loss=total_loss,
                 eval_metric_ops=eval_metrics,
@@ -530,7 +543,7 @@ def main(_):
     tpu_cluster_resolver = None
 
     #is_per_host = tf.contrib.tpu.InputPipelineConfig.PER_HOST_V2
-    run_config = tf.estimator.RunConfig(
+    run_config = estimator_api.RunConfig(
         model_dir=FLAGS.checkpointDir,
         save_checkpoints_steps=FLAGS.save_checkpoints_steps)
     
@@ -551,7 +564,7 @@ def main(_):
 
     # If TPU is not available, this will fall back to normal Estimator on CPU
     # or GPU.
-    estimator = tf.estimator.Estimator(
+    estimator = estimator_api.Estimator(
         model_fn=model_fn,
         config=run_config,
         params={
