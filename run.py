@@ -31,17 +31,18 @@ try:
     estimator_api = tf.estimator
 except AttributeError:
     try:
+        estimator_api = tf.compat.v1.estimator
+    except AttributeError:
+        estimator_api = None
+
+if estimator_api is None:
+    try:
         from tensorflow_estimator.python.estimator import estimator_lib as estimator_api
     except Exception:
         estimator_api = None
 flags = tf.compat.v1.flags
 
 FLAGS = flags.FLAGS
-
-if estimator_api is None:
-    raise ImportError(
-        "Estimator API is unavailable. Install tensorflow-estimator or use a TensorFlow build that includes estimator."
-    )
 
 ## Required parameters
 flags.DEFINE_string(
@@ -510,6 +511,13 @@ def _decode_record(record, name_to_features):
 
 def main(_):
     tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.INFO)
+
+    if estimator_api is None:
+        raise ImportError(
+            "Estimator API is unavailable in this TensorFlow build. "
+            "Use TensorFlow <= 2.15 with tensorflow-estimator, or migrate run.py "
+            "to a custom tf.keras training loop."
+        )
 
     FLAGS.checkpointDir = FLAGS.checkpointDir + FLAGS.signature
     print('checkpointDir:', FLAGS.checkpointDir)
