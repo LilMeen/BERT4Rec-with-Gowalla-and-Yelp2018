@@ -528,7 +528,7 @@ def main(_):
 
     bert_config = modeling.BertConfig.from_json_file(FLAGS.bert_config_file)
 
-    tf.io.gfile.MakeDirs(FLAGS.checkpointDir)
+    tf.io.gfile.makedirs(FLAGS.checkpointDir)
 
     train_input_files = []
     for input_pattern in FLAGS.train_input_file.split(","):
