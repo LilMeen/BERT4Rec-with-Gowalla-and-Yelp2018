@@ -532,14 +532,14 @@ def main(_):
 
     train_input_files = []
     for input_pattern in FLAGS.train_input_file.split(","):
-        train_input_files.extend(tf.io.gfile.Glob(input_pattern))
+        train_input_files.extend(tf.io.gfile.glob(input_pattern))
 
     test_input_files = []
     if FLAGS.test_input_file is None:
         test_input_files = train_input_files
     else:
         for input_pattern in FLAGS.test_input_file.split(","):
-            test_input_files.extend(tf.io.gfile.Glob(input_pattern))
+            test_input_files.extend(tf.io.gfile.glob(input_pattern))
 
     tf.compat.v1.logging.info("*** train Input Files ***")
     for input_file in train_input_files:
