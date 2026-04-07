@@ -251,6 +251,14 @@ def rank_metrics(rank: int) -> Dict[str, float]:
     return out
 
 
+def format_seconds(seconds: float) -> str:
+    seconds = int(max(0, seconds))
+    h = seconds // 3600
+    m = (seconds % 3600) // 60
+    s = seconds % 60
+    return f"{h:02d}:{m:02d}:{s:02d}"
+
+
 def evaluate_split(
     model: nn.Module,
     split: SplitData,
@@ -358,6 +366,8 @@ def main():
     parser.add_argument("--eval_every", type=int, default=1)
     parser.add_argument("--eval_users_limit", type=int, default=0)
     parser.add_argument("--max_seq_length", type=int, default=0)
+    parser.add_argument("--early_stop_patience", type=int, default=0)
+    parser.add_argument("--early_stop_min_delta", type=float, default=0.0)
     args = parser.parse_args()
 
     set_seed(args.seed)
@@ -444,8 +454,10 @@ def main():
     val_metrics_history = []
     best_val_ndcg10 = -1.0
     best_epoch = -1
+    no_improve_evals = 0
     best_ckpt_path = os.path.join(args.checkpointDir, f"{args.dataset_name}_{args.signature}_best.pt")
 
+    train_start = time.time()
     print("[INFO] start training")
     for epoch in range(1, args.epochs + 1):
         epoch_start = time.time()
@@ -469,7 +481,14 @@ def main():
 
             if step % 100 == 0:
                 avg_so_far = running_loss / step
-                print(f"[TRAIN] epoch={epoch} step={step}/{len(train_loader)} loss={avg_so_far:.6f}")
+                epoch_elapsed = time.time() - epoch_start
+                total_elapsed = time.time() - train_start
+                print(
+                    f"[TRAIN] epoch={epoch} step={step}/{len(train_loader)} "
+                    f"loss={avg_so_far:.6f} "
+                    f"time_epoch={format_seconds(epoch_elapsed)} "
+                    f"time_total={format_seconds(total_elapsed)}"
+                )
 
             if args.num_train_steps > 0 and global_step >= args.num_train_steps:
                 break
@@ -505,9 +524,10 @@ def main():
             val_metrics_history.append(val_metrics)
             print(f"[VAL] epoch={epoch} metrics={val_metrics}")
 
-            if val_metrics["ndcg@10"] > best_val_ndcg10:
+            if val_metrics["ndcg@10"] > (best_val_ndcg10 + args.early_stop_min_delta):
                 best_val_ndcg10 = val_metrics["ndcg@10"]
                 best_epoch = epoch
+                no_improve_evals = 0
                 torch.save(
                     {
                         "model_state": model.state_dict(),
@@ -521,6 +541,15 @@ def main():
                     best_ckpt_path,
                 )
                 print(f"[INFO] saved best checkpoint: {best_ckpt_path}")
+            else:
+                no_improve_evals += 1
+
+            if args.early_stop_patience > 0 and no_improve_evals >= args.early_stop_patience:
+                print(
+                    "[INFO] early stopping triggered: "
+                    f"no val ndcg@10 improvement for {no_improve_evals} eval(s)"
+                )
+                break
 
         if args.num_train_steps > 0 and global_step >= args.num_train_steps:
             print(f"[INFO] reached num_train_steps={args.num_train_steps}, stopping training")
@@ -551,6 +580,8 @@ def main():
             "epochs": args.epochs,
             "num_train_steps": args.num_train_steps,
             "masked_lm_prob": args.masked_lm_prob,
+            "early_stop_patience": args.early_stop_patience,
+            "early_stop_min_delta": args.early_stop_min_delta,
             "max_len": max_len,
             "hidden_size": hidden_size,
             "num_hidden_layers": num_hidden_layers,

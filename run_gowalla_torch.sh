@@ -19,5 +19,7 @@ python -u run_torch.py \
   --epochs 50 \
   --learning_rate 1e-4 \
   --weight_decay 1e-4 \
+  --early_stop_patience 5 \
+  --early_stop_min_delta 1e-4 \
   --masked_lm_prob 0.4 \
   --seed 2020
