@@ -5,9 +5,15 @@
 
 **Requirements**
 
-* python 2.7+
-* Tensorflow 1.12 (GPU version)
-* CUDA compatible with TF 1.12
+* Python 3.9+
+* TensorFlow 2.x (GPU build)
+* NVIDIA driver/CUDA runtime compatible with the installed TensorFlow build
+
+Example install:
+
+```bash
+pip install "tensorflow>=2.16" numpy six
+```
 
 **Run**
 
