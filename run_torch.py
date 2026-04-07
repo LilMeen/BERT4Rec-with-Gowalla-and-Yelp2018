@@ -357,6 +357,7 @@ def main():
     parser.add_argument("--num_workers", type=int, default=2)
     parser.add_argument("--eval_every", type=int, default=1)
     parser.add_argument("--eval_users_limit", type=int, default=0)
+    parser.add_argument("--max_seq_length", type=int, default=0)
     args = parser.parse_args()
 
     set_seed(args.seed)
@@ -369,7 +370,9 @@ def main():
     with open(args.bert_config_file, "r", encoding="utf-8") as f:
         cfg = json.load(f)
 
-    max_len = int(cfg["max_position_embeddings"])
+    config_max_len = int(cfg["max_position_embeddings"])
+    max_len = int(args.max_seq_length) if args.max_seq_length and args.max_seq_length > 0 else config_max_len
+    print(f"[INFO] max_seq_length={max_len} (config={config_max_len})")
     hidden_size = int(cfg["hidden_size"])
     num_hidden_layers = int(cfg["num_hidden_layers"])
     num_attention_heads = int(cfg["num_attention_heads"])

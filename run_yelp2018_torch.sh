@@ -5,6 +5,7 @@ CKPT_DIR="./checkpoints/yelp2018"
 RESULTS_DIR="./results/BERT4Rec"
 DATASET="yelp2018"
 DIM=64
+MAX_SEQ_LENGTH=50
 
 python -u run_torch.py \
   --dataset_name "${DATASET}" \
@@ -13,6 +14,7 @@ python -u run_torch.py \
   --checkpointDir "${CKPT_DIR}" \
   --results_dir "${RESULTS_DIR}" \
   --signature "torch-${DIM}" \
+  --max_seq_length "${MAX_SEQ_LENGTH}" \
   --batch_size 256 \
   --epochs 50 \
   --learning_rate 1e-4 \
